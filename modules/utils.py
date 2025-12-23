@@ -15,99 +15,24 @@ import base64
 
 
 def load_config() -> Dict[str, Any]:
-    """Load configuration from config.json
-    
-    Supports multiple methods:
-    1. Environment variable DISCORD_TOKEN (for deployments)
-    2. config/config.json file (relative to script directory)
-    3. config/config.json file (relative to current working directory)
-    """
-    # First, try environment variable (common in cloud deployments)
-    token = os.environ.get("DISCORD_TOKEN")
-    if token:
-        token = token.strip()  # Strip whitespace
-        # Build config from environment variables
-        config = {
-            "token": token,
-            "prefix": os.environ.get("DISCORD_PREFIX", "*"),
-            "remote-users": os.environ.get("DISCORD_REMOTE_USERS", "").split(",") if os.environ.get("DISCORD_REMOTE_USERS") else [],
-            "autoreply": {
-                "messages": os.environ.get("DISCORD_AUTOREPLY_MESSAGES", "").split("|") if os.environ.get("DISCORD_AUTOREPLY_MESSAGES") else [],
-                "channels": os.environ.get("DISCORD_AUTOREPLY_CHANNELS", "").split(",") if os.environ.get("DISCORD_AUTOREPLY_CHANNELS") else [],
-                "users": os.environ.get("DISCORD_AUTOREPLY_USERS", "").split(",") if os.environ.get("DISCORD_AUTOREPLY_USERS") else []
-            },
-            "afk": {
-                "enabled": os.environ.get("DISCORD_AFK_ENABLED", "false").lower() == "true",
-                "message": os.environ.get("DISCORD_AFK_MESSAGE", "I am currently AFK!")
-            },
-            "copycat": {
-                "users": os.environ.get("DISCORD_COPYCAT_USERS", "").split(",") if os.environ.get("DISCORD_COPYCAT_USERS") else []
-            },
-            "selenium": {
-                "headless": os.environ.get("DISCORD_SELENIUM_HEADLESS", "true").lower() == "true",
-                "implicit_wait": int(os.environ.get("DISCORD_SELENIUM_IMPLICIT_WAIT", "10")),
-                "page_load_timeout": int(os.environ.get("DISCORD_SELENIUM_PAGE_LOAD_TIMEOUT", "30")),
-                "window_size": {
-                    "width": int(os.environ.get("DISCORD_SELENIUM_WIDTH", "1920")),
-                    "height": int(os.environ.get("DISCORD_SELENIUM_HEIGHT", "1080"))
-                }
-            },
-            "tts": {
-                "provider": os.environ.get("DISCORD_TTS_PROVIDER", "elevenlabs"),
-                "default_voice": os.environ.get("DISCORD_TTS_VOICE", "default"),
-                "save_path": os.environ.get("DISCORD_TTS_SAVE_PATH", "temp/tts")
-            }
-        }
-        print(f"[INFO] Loaded configuration from environment variables")
-        return config
-    
-    # Try to find config file using absolute path based on script location
+    """Load configuration from config/config.json"""
     script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    config_paths = [
-        os.path.join(script_dir, "config", "config.json"),  # Relative to main.py location
-        os.path.join("config", "config.json"),  # Relative to current working directory
-        os.path.abspath(os.path.join("config", "config.json")),  # Absolute from CWD
-    ]
+    config_path = os.path.join(script_dir, "config", "config.json")
     
-    for config_path in config_paths:
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r", encoding="utf-8") as f:
-                    config = json.load(f)
-                    # Strip token whitespace if present
-                    if "token" in config and isinstance(config["token"], str):
-                        config["token"] = config["token"].strip()
-                    print(f"[INFO] Loaded configuration from: {config_path}")
-                    return config
-            except json.JSONDecodeError as e:
-                print(f"[WARNING] Invalid JSON in config file {config_path}: {e}")
-                continue
-            except Exception as e:
-                print(f"[WARNING] Error reading config file {config_path}: {e}")
-                continue
+    if not os.path.exists(config_path):
+        config_path = os.path.join("config", "config.json")
     
-    # If no config found, try to create from example
-    example_path = os.path.join(script_dir, "config", "config.json.example")
-    if os.path.exists(example_path):
-        print(f"[WARNING] config.json not found. Attempting to create from example...")
+    if os.path.exists(config_path):
         try:
-            with open(example_path, "r", encoding="utf-8") as f:
-                example_config = json.load(f)
-            # Create config directory if it doesn't exist
-            config_dir = os.path.join(script_dir, "config")
-            os.makedirs(config_dir, exist_ok=True)
-            config_path = os.path.join(config_dir, "config.json")
-            with open(config_path, "w", encoding="utf-8") as f:
-                json.dump(example_config, f, indent=2, ensure_ascii=False)
-            print(f"[INFO] Created config.json from example at: {config_path}")
-            return example_config
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+                if "token" in config and isinstance(config["token"], str):
+                    config["token"] = config["token"].strip()
+                return config
         except Exception as e:
-            print(f"[ERROR] Failed to create config from example: {e}")
+            print(f"Error loading config: {e}")
+            return {}
     
-    # Last resort: return empty dict
-    print(f"[WARNING] No configuration found. Tried paths: {config_paths}")
-    print(f"[INFO] Current working directory: {os.getcwd()}")
-    print(f"[INFO] Script directory: {script_dir}")
     return {}
 
 
