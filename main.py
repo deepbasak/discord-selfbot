@@ -7,6 +7,8 @@ import os
 import sys
 import asyncio
 import time
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Python 3.14 compatibility: audioop module was removed
 # audioop-lts package provides the audioop module for Python 3.13+
@@ -17,17 +19,63 @@ from modules.commands import CommandHandler
 from modules.utils import load_config
 
 
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    """Simple HTTP handler for health checks"""
+    def do_GET(self):
+        if self.path == '/health' or self.path == '/':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"status":"ok"}')
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def log_message(self, format, *args):
+        # Suppress health check logs
+        pass
+
+
+def start_health_check_server(port=8080):
+    """Start a simple HTTP server for health checks"""
+    try:
+        server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
+        print(f"[INFO] Health check server started on port {port}")
+        server.serve_forever()
+    except Exception as e:
+        print(f"[WARNING] Could not start health check server: {e}")
+
+
 class AdvancedSelfBot:
     """Main bot class"""
     
     def __init__(self):
         self.config = load_config()
+        # Get token and strip whitespace
         self.token = self.config.get("token")
+        if isinstance(self.token, str):
+            self.token = self.token.strip()
         self.prefix = self.config.get("prefix", "*")
         self.start_time = time.time()
         
-        if not self.token or self.token == "YOUR_BOT_TOKEN_HERE":
+        # Debug: Print config status (without exposing token)
+        print(f"[DEBUG] Config loaded: {bool(self.config)}")
+        print(f"[DEBUG] Token present: {bool(self.token)}")
+        print(f"[DEBUG] Token length: {len(self.token) if self.token else 0}")
+        print(f"[DEBUG] Token starts with: {self.token[:10] if self.token and len(self.token) > 10 else 'N/A'}...")
+        
+        if not self.token or self.token == "YOUR_BOT_TOKEN_HERE" or len(self.token) < 10:
             print("❌ Please set your token in config/config.json")
+            print("\nFor deployment environments, you can also use environment variables:")
+            print("  - DISCORD_TOKEN: Your Discord token (required)")
+            print("  - DISCORD_PREFIX: Command prefix (optional, default: *)")
+            print("\nExample:")
+            print("  export DISCORD_TOKEN='your_token_here'")
+            print("  python main.py")
+            print("\nOr set in your deployment platform's environment variables.")
+            print(f"\nCurrent working directory: {os.getcwd()}")
+            print(f"Script directory: {os.path.dirname(os.path.abspath(__file__))}")
+            print(f"Config keys: {list(self.config.keys()) if self.config else 'No config loaded'}")
             sys.exit(1)
         
         # Initialize Discord client (selfbot mode)
@@ -145,6 +193,15 @@ class AdvancedSelfBot:
     
     def run(self):
         """Run the bot"""
+        # Start health check server in background thread (for DigitalOcean/cloud deployments)
+        health_check_port = int(os.environ.get("HEALTH_CHECK_PORT", "8080"))
+        health_check_thread = threading.Thread(
+            target=start_health_check_server,
+            args=(health_check_port,),
+            daemon=True
+        )
+        health_check_thread.start()
+        
         try:
             self.bot.run(self.token)
         except discord.LoginFailure:
