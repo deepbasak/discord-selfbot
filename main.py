@@ -604,17 +604,48 @@ class CommandHandler:
             if amount <= 0:
                 await self.safe_edit(message, "❌ Amount > 0")
                 return
+            
+            # Delete command message first
             try:
                 await message.delete()
             except:
                 pass
-            deleted = await message.channel.purge(limit=amount)
-            confirmation = await message.channel.send(f"✅ Deleted {len(deleted) + 1} messages")
-            await asyncio.sleep(3)
-            try:
-                await confirmation.delete()
-            except:
-                pass
+            
+            deleted_count = 0
+            
+            # Check if channel supports purge method
+            if hasattr(message.channel, 'purge') and callable(getattr(message.channel, 'purge', None)):
+                # Use purge for text channels
+                try:
+                    deleted = await message.channel.purge(limit=amount)
+                    deleted_count = len(deleted)
+                except AttributeError:
+                    # Fallback to manual deletion
+                    pass
+            
+            # If purge didn't work or channel doesn't support it, delete manually
+            if deleted_count == 0:
+                try:
+                    async for msg in message.channel.history(limit=amount + 1):
+                        if msg.author.id == self.bot.user.id:
+                            try:
+                                await msg.delete()
+                                deleted_count += 1
+                                await asyncio.sleep(0.2)  # Rate limit
+                            except:
+                                pass
+                except:
+                    pass
+            
+            if deleted_count > 0:
+                confirmation = await message.channel.send(f"✅ Deleted {deleted_count} messages")
+                await asyncio.sleep(3)
+                try:
+                    await confirmation.delete()
+                except:
+                    pass
+            else:
+                await message.channel.send("❌ Could not delete messages (channel may not support bulk deletion)")
         except Exception as e:
             await self.safe_edit(message, f"❌ {str(e)}")
     
