@@ -396,6 +396,12 @@ class CommandHandler:
 {prefix}purge <amount> - Delete messages
 {prefix}clear <amount> - Clear messages
 
+[Automation]
+{prefix}spam <amount> <message> - Spam messages
+{prefix}quickdelete <message> - Send and delete message
+{prefix}autoreply ON|OFF - Toggle auto-reply
+{prefix}afk ON|OFF [message] - Set AFK status
+
 [Server]
 {prefix}guildinfo - Server info
 {prefix}guildicon - Server icon
