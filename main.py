@@ -10,7 +10,7 @@ Supports Replit and local deployment
 TOKEN = "YOUR_TOKEN_HERE"
 
 # Optional settings:
-PREFIX = "*"  # Command prefix
+PREFIX = "."  # Command prefix
 # =======================================================
 
 import os
@@ -136,7 +136,7 @@ def load_config():
     
     return {
         "token": token.strip() if token else "",
-        "prefix": PREFIX if PREFIX else (os.environ.get("PREFIX", "*")),
+        "prefix": PREFIX if PREFIX else (os.environ.get("PREFIX", ".")),
         "remote-users": os.environ.get("REMOTE_USERS", "").split(",") if os.environ.get("REMOTE_USERS") else [],
         "selenium": {"headless": os.environ.get("SELENIUM_HEADLESS", "true").lower() == "true"}
     }
@@ -303,7 +303,6 @@ class CommandHandler:
             "shutdown": self.cmd_shutdown,
             "uptime": self.cmd_uptime,
             "ping": self.cmd_ping,
-            "changeprefix": self.cmd_changeprefix,
             "remoteuser": self.cmd_remoteuser,
             "copycat": self.cmd_copycat,
             "pingweb": self.cmd_pingweb,
@@ -381,7 +380,6 @@ class CommandHandler:
 {prefix}help - Show this menu
 {prefix}ping - Check latency
 {prefix}uptime - Show uptime
-{prefix}changeprefix <prefix> - Change prefix
 {prefix}shutdown - Stop bot
 
 [User Management]
@@ -455,17 +453,6 @@ class CommandHandler:
     async def cmd_ping(self, message):
         latency = round(self.bot.latency * 1000, 2)
         await self.safe_edit(message, f"🏓 Pong! {latency}ms")
-    
-    async def cmd_changeprefix(self, message, args):
-        if not args:
-            await self.safe_edit(message, "❌ Provide prefix")
-            return
-        new_prefix = args[0]
-        self.config["prefix"] = new_prefix
-        save_config(self.config)
-        if self.bot_instance:
-            self.bot_instance.prefix = new_prefix
-        await self.safe_edit(message, f"✅ Prefix: `{new_prefix}`")
     
     async def cmd_remoteuser(self, message, args):
         if len(args) < 2:
@@ -910,7 +897,6 @@ class CommandHandler:
             "quickdelete": ["test quick delete"],
             "autoreply": ["ON"],
             "afk": ["ON", "test afk"],
-            "changeprefix": ["!"],
             "playing": ["test game"],
             "watching": ["test stream"],
             "ascii": ["test"],
@@ -1022,7 +1008,7 @@ class Bot:
         patch_discord_state()
         self.config = load_config()
         self.token = self.config.get("token", "").strip() if self.config.get("token") else ""
-        self.prefix = self.config.get("prefix", "*")
+        self.prefix = self.config.get("prefix", ".")
         self.start_time = time.time()
         
         if not self.token or self.token == "YOUR_TOKEN_HERE" or len(self.token) < 10:
