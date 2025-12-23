@@ -19,6 +19,65 @@ from modules.commands import CommandHandler
 from modules.utils import load_config
 
 
+def patch_discord_state():
+    """Monkey patch discord.py-self to fix NoneType iteration errors
+    
+    The issue is in discord/state.py line 1039 where it tries to iterate over
+    data.get('pending_payments', []) but the value can be None even if the key exists.
+    """
+    try:
+        # Import state module
+        from discord import state as discord_state
+        
+        # Get the original method
+        original_parse_ready_supplemental = discord_state.ConnectionState.parse_ready_supplemental
+        
+        async def patched_parse_ready_supplemental(self, data):
+            """Patched version that handles None values for pending_payments and connected_accounts"""
+            # Fix pending_payments - handle None case
+            # The issue: data.get('pending_payments', []) returns None if key exists with None value
+            pending_payments_raw = data.get('pending_payments')
+            pending_payments_data = pending_payments_raw if pending_payments_raw is not None else []
+            
+            # Use the same logic as original but with safe None handling
+            try:
+                # Import Payment class from state module
+                Payment = getattr(discord_state, 'Payment', None)
+                if Payment:
+                    self.pending_payments = {int(p['id']): Payment(state=self, data=p) for p in pending_payments_data}
+                else:
+                    # Fallback if Payment class doesn't exist
+                    self.pending_payments = {int(p['id']): p for p in pending_payments_data if p and 'id' in p}
+            except (TypeError, KeyError, ValueError) as e:
+                print(f"[WARNING] Error processing pending_payments: {e}")
+                self.pending_payments = {}
+            
+            # Fix connected_accounts - handle None case
+            connected_accounts_raw = data.get('connected_accounts')
+            connected_accounts_data = connected_accounts_raw if connected_accounts_raw is not None else []
+            
+            try:
+                # Import ConnectedAccount class from state module
+                ConnectedAccount = getattr(discord_state, 'ConnectedAccount', None)
+                if ConnectedAccount:
+                    self.connected_accounts = {int(acc['id']): ConnectedAccount(state=self, data=acc) for acc in connected_accounts_data}
+                else:
+                    # Fallback if ConnectedAccount class doesn't exist
+                    self.connected_accounts = {int(acc['id']): acc for acc in connected_accounts_data if acc and 'id' in acc}
+            except (TypeError, KeyError, ValueError) as e:
+                print(f"[WARNING] Error processing connected_accounts: {e}")
+                self.connected_accounts = {}
+        
+        # Apply the patch
+        discord_state.ConnectionState.parse_ready_supplemental = patched_parse_ready_supplemental
+        print("[INFO] Applied discord.py-self state patch for pending_payments/connected_accounts")
+    except Exception as e:
+        import traceback
+        print(f"[WARNING] Could not apply discord state patch: {e}")
+        traceback.print_exc()
+        print("[WARNING] Bot may encounter errors if pending_payments or connected_accounts are None")
+
+
 class HealthCheckHandler(BaseHTTPRequestHandler):
     """Simple HTTP handler for health checks"""
     def do_GET(self):
@@ -50,6 +109,9 @@ class AdvancedSelfBot:
     """Main bot class"""
     
     def __init__(self):
+        # Apply discord.py-self patches before initializing bot
+        patch_discord_state()
+        
         self.config = load_config()
         # Get token and strip whitespace
         self.token = self.config.get("token")
