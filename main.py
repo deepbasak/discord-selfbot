@@ -4,6 +4,8 @@ Supports Replit and local deployment
 """
 
 # ==================== CONFIGURATION ====================
+# ⚠️ IMPORTANT: Replace YOUR_TOKEN_HERE with your actual Discord token
+# ⚠️ DO NOT commit your real token to GitHub - it will be blocked!
 # Paste your Discord token here:
 TOKEN = "YOUR_TOKEN_HERE"
 
