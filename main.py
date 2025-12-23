@@ -119,12 +119,18 @@ def patch_discord_state():
 
 # ==================== CONFIG ====================
 def load_config():
+    """Load config from environment variables or create default"""
     # Try environment variable first (Replit)
     token = os.environ.get("TOKEN") or os.environ.get("DISCORD_TOKEN")
     if token:
-        return {"token": token.strip(), "prefix": os.environ.get("PREFIX", "*")}
+        return {
+            "token": token.strip(),
+            "prefix": os.environ.get("PREFIX", "*"),
+            "remote-users": os.environ.get("REMOTE_USERS", "").split(",") if os.environ.get("REMOTE_USERS") else [],
+            "selenium": {"headless": os.environ.get("SELENIUM_HEADLESS", "true").lower() == "true"}
+        }
     
-    # Try config.json
+    # Try config.json (optional - for backward compatibility)
     for path in ["config/config.json", "config.json"]:
         if os.path.exists(path):
             try:
@@ -136,12 +142,21 @@ def load_config():
             except:
                 pass
     
-    return {}
+    # Return empty - token must be set via env var
+    return {"prefix": "*", "remote-users": [], "selenium": {"headless": True}}
 
 def save_config(config):
-    os.makedirs("config", exist_ok=True)
-    with open("config/config.json", "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=2)
+    """Save config to file (optional - only if config.json exists)"""
+    # Only save if config.json already exists (backward compatibility)
+    for path in ["config/config.json", "config.json"]:
+        if os.path.exists(path):
+            try:
+                os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(config, f, indent=2)
+                return
+            except:
+                pass
 
 # ==================== UTILITIES ====================
 def get_uptime(start_time):
@@ -828,7 +843,9 @@ class Bot:
         self.start_time = time.time()
         
         if not self.token or self.token == "YOUR_BOT_TOKEN_HERE" or len(self.token) < 10:
-            print("❌ Set token in config/config.json or TOKEN env variable")
+            print("❌ Set token via TOKEN environment variable")
+            print("   Example: export TOKEN='your_token_here'")
+            print("   Or on Replit: Set TOKEN in Secrets/Environment Variables")
             sys.exit(1)
         
         self.bot = discord.Client()
@@ -911,7 +928,7 @@ if __name__ == "__main__":
         print("❌ Python 3.8+ required")
         sys.exit(1)
     
-    os.makedirs("config", exist_ok=True)
+    # Create temp directory if needed (for screenshots, downloads, etc.)
     os.makedirs("temp", exist_ok=True)
     
     bot = Bot()

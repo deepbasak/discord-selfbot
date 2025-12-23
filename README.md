@@ -10,14 +10,13 @@ Simple Discord selfbot in a single file - ready for Replit and local use.
 3. Run `python main.py`
 
 ### Local
-1. Create `config/config.json`:
-```json
-{
-  "token": "YOUR_TOKEN_HERE",
-  "prefix": "*"
-}
-```
+1. Set environment variable:
+   ```bash
+   export TOKEN='your_discord_token_here'
+   ```
 2. Run `python main.py`
+
+**Note:** The bot auto-installs missing packages on first run!
 
 ## Commands
 
