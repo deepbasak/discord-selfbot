@@ -341,6 +341,7 @@ class CommandHandler:
             "leetpeek": self.cmd_leetpeek,
             "whremove": self.cmd_whremove,
             "firstmessage": self.cmd_firstmessage,
+            "test": self.cmd_test, "testcommands": self.cmd_test,
         }
     
     async def safe_edit(self, message, content):
@@ -362,7 +363,7 @@ class CommandHandler:
         command = command.lower()
         handler = self.command_map.get(command)
         if handler:
-            if command in ("shutdown", "uptime", "ping", "guildinfo", "guildicon", "guildbanner", "fetchmembers", "stopactivity", "gentoken", "nitro", "firstmessage"):
+            if command in ("shutdown", "uptime", "ping", "guildinfo", "guildicon", "guildbanner", "fetchmembers", "stopactivity", "gentoken", "nitro", "firstmessage", "test", "testcommands"):
                 await handler(message)
             else:
                 await handler(message, args)
@@ -437,6 +438,7 @@ class CommandHandler:
 
 [Utility]
 {prefix}firstmessage - Get first message link
+{prefix}test - Test all commands (check console for results)
 ```"""
         await self.safe_edit(message, help_text)
     
@@ -844,6 +846,144 @@ class CommandHandler:
                 break
         except Exception as e:
             await self.safe_edit(message, f"❌ {str(e)}")
+    
+    async def cmd_test(self, message):
+        """Test all commands (except Selenium-based) with random queries"""
+        await self.safe_edit(message, "🧪 Testing all commands... Check console for results.")
+        
+        # Commands to test (excluding Selenium: screenshot, scrape, download)
+        test_commands = {
+            # Basic - no args needed
+            "ping": [],
+            "uptime": [],
+            "help": [],
+            "guildinfo": [],
+            "guildicon": [],
+            "guildbanner": [],
+            "fetchmembers": [],
+            "stopactivity": [],
+            "gentoken": [],
+            "nitro": [],
+            "firstmessage": [],
+            
+            # Commands with args
+            "pingweb": ["google.com"],
+            "geoip": ["8.8.8.8"],
+            "qr": ["test qr code"],
+            "reverse": ["hello world"],
+            "edit": ["test edit"],
+            "hidemention": ["@test mention"],
+            "purge": ["1"],
+            "clear": ["1"],
+            "spam": ["2", "test spam"],
+            "quickdelete": ["test quick delete"],
+            "autoreply": ["ON"],
+            "afk": ["ON", "test afk"],
+            "changeprefix": ["!"],
+            "playing": ["test game"],
+            "watching": ["test stream"],
+            "ascii": ["test"],
+            "minesweeper": ["5", "5"],
+            "leetpeek": ["hello world"],
+        }
+        
+        # Exclude Selenium commands
+        selenium_commands = {"screenshot", "scrape", "download"}
+        
+        results = {"working": [], "failed": [], "skipped": []}
+        
+        print("\n" + "=" * 60)
+        print("🧪 COMMAND TESTING STARTED")
+        print("=" * 60)
+        
+        for cmd_name, test_args in test_commands.items():
+            if cmd_name in selenium_commands:
+                results["skipped"].append(cmd_name)
+                print(f"⏭️  SKIPPED: {cmd_name} (Selenium-based)")
+                continue
+            
+            handler = self.command_map.get(cmd_name)
+            if not handler:
+                results["failed"].append(f"{cmd_name} (not found)")
+                print(f"❌ FAILED: {cmd_name} - Handler not found")
+                continue
+            
+            try:
+                # Test the command handler
+                if cmd_name in ("ping", "uptime", "help", "guildinfo", "guildicon", 
+                              "guildbanner", "fetchmembers", "stopactivity", "gentoken", 
+                              "nitro", "firstmessage"):
+                    # Commands without args
+                    await handler(message)
+                else:
+                    # Commands with args
+                    await handler(message, test_args)
+                
+                results["working"].append(cmd_name)
+                print(f"✅ PASSED: {cmd_name}")
+            except Exception as e:
+                results["failed"].append(f"{cmd_name} ({str(e)[:50]})")
+                print(f"❌ FAILED: {cmd_name} - {str(e)[:100]}")
+        
+        # Test commands that need special handling
+        special_tests = {
+            "remoteuser": ["ADD"],
+            "copycat": ["ON"],
+            "cleardm": ["1"],
+            "usericon": [],
+            "dmall": ["test"],
+            "sendall": ["test"],
+            "hypesquad": ["bravery"],
+            "whremove": ["https://discord.com/api/webhooks/test/test"],
+        }
+        
+        for cmd_name, test_args in special_tests.items():
+            if cmd_name in selenium_commands:
+                continue
+            handler = self.command_map.get(cmd_name)
+            if handler:
+                try:
+                    if cmd_name in ("usericon",):
+                        await handler(message, [])
+                    else:
+                        await handler(message, test_args)
+                    results["working"].append(cmd_name)
+                    print(f"✅ PASSED: {cmd_name}")
+                except Exception as e:
+                    results["failed"].append(f"{cmd_name} ({str(e)[:50]})")
+                    print(f"❌ FAILED: {cmd_name} - {str(e)[:100]}")
+        
+        print("\n" + "=" * 60)
+        print("📊 TEST RESULTS SUMMARY")
+        print("=" * 60)
+        print(f"✅ Working: {len(results['working'])} commands")
+        print(f"❌ Failed: {len(results['failed'])} commands")
+        print(f"⏭️  Skipped: {len(results['skipped'])} commands (Selenium)")
+        print("\n✅ Working Commands:")
+        for cmd in results["working"]:
+            print(f"   - {cmd}")
+        
+        if results["failed"]:
+            print("\n❌ Failed Commands:")
+            for cmd in results["failed"]:
+                print(f"   - {cmd}")
+        
+        if results["skipped"]:
+            print("\n⏭️  Skipped Commands (Selenium):")
+            for cmd in results["skipped"]:
+                print(f"   - {cmd}")
+        
+        print("=" * 60)
+        
+        # Send summary to Discord
+        summary = f"""🧪 **Test Complete**
+✅ Working: {len(results['working'])}
+❌ Failed: {len(results['failed'])}
+⏭️ Skipped: {len(results['skipped'])} (Selenium)
+
+Check console for detailed results."""
+        
+        await self.safe_edit(message, summary)
 
 # ==================== BOT ====================
 class Bot:
