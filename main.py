@@ -100,7 +100,8 @@ def patch_discord_state():
         from discord import state as discord_state
         original_parse_ready_supplemental = discord_state.ConnectionState.parse_ready_supplemental
         
-        async def patched_parse_ready_supplemental(self, data):
+        def patched_parse_ready_supplemental(self, data):
+            """Patched version - synchronous to match original call"""
             pending_payments_raw = data.get('pending_payments')
             pending_payments_data = pending_payments_raw if pending_payments_raw is not None else []
             try:
