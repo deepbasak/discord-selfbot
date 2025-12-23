@@ -383,18 +383,25 @@ class CommandHandler:
 {prefix}changeprefix <prefix> - Change prefix
 {prefix}shutdown - Stop bot
 
+[User Management]
+{prefix}remoteuser ADD|REMOVE <@user> - Manage remote users
+{prefix}copycat ON|OFF <@user> - Copy user messages
+
 [Web]
 {prefix}pingweb <url> - Ping website
 {prefix}geoip <ip> - IP lookup
 {prefix}qr <text> - Generate QR code
 {prefix}screenshot <url> - Screenshot website
 {prefix}scrape <url> - Scrape website
+{prefix}download <url> - Download file from URL
 
 [Message]
 {prefix}reverse <text> - Reverse text
 {prefix}edit <text> - Edit message
+{prefix}hidemention <text> - Hide mentions
 {prefix}purge <amount> - Delete messages
 {prefix}clear <amount> - Clear messages
+{prefix}cleardm <amount> - Clear DMs
 
 [Automation]
 {prefix}spam <amount> <message> - Spam messages
@@ -405,7 +412,10 @@ class CommandHandler:
 [Server]
 {prefix}guildinfo - Server info
 {prefix}guildicon - Server icon
+{prefix}guildbanner - Server banner
+{prefix}guildrename <name> - Rename server
 {prefix}usericon <@user> - User avatar
+{prefix}fetchmembers - Get all server members
 {prefix}dmall <message> - DM all members
 {prefix}sendall <message> - Send to all channels
 
@@ -419,7 +429,14 @@ class CommandHandler:
 {prefix}hypesquad <house> - Change badge
 {prefix}nitro - Fake nitro
 {prefix}ascii <text> - ASCII art
-{prefix}minesweeper - Play game
+{prefix}minesweeper <width> <height> - Play game
+{prefix}leetpeek <text> - Leet speak
+
+[Webhooks]
+{prefix}whremove <webhook_url> - Delete webhook
+
+[Utility]
+{prefix}firstmessage - Get first message link
 ```"""
         await self.safe_edit(message, help_text)
     
