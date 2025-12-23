@@ -4,19 +4,18 @@ Simple Discord selfbot in a single file - ready for Replit and local use.
 
 ## Quick Start
 
-### Replit
-1. Fork this repo to Replit
-2. Set environment variable: `TOKEN` = your Discord token
-3. Run `python main.py`
-
-### Local
-1. Set environment variable:
-   ```bash
-   export TOKEN='your_discord_token_here'
+1. Open `main.py`
+2. Find the `TOKEN` variable at the top (line ~7)
+3. Replace `"YOUR_TOKEN_HERE"` with your Discord token:
+   ```python
+   TOKEN = "your_actual_discord_token_here"
    ```
-2. Run `python main.py`
+4. Run `python main.py`
 
 **Note:** The bot auto-installs missing packages on first run!
+
+### Optional: Environment Variable (Replit)
+You can also use `TOKEN` environment variable if you prefer.
 
 ## Commands
 

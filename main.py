@@ -3,6 +3,14 @@ Discord SelfBot - All-in-One
 Supports Replit and local deployment
 """
 
+# ==================== CONFIGURATION ====================
+# Paste your Discord token here:
+TOKEN = "YOUR_TOKEN_HERE"
+
+# Optional settings:
+PREFIX = "*"  # Command prefix
+# =======================================================
+
 import os
 import sys
 import subprocess
@@ -119,44 +127,22 @@ def patch_discord_state():
 
 # ==================== CONFIG ====================
 def load_config():
-    """Load config from environment variables or create default"""
-    # Try environment variable first (Replit)
-    token = os.environ.get("TOKEN") or os.environ.get("DISCORD_TOKEN")
-    if token:
-        return {
-            "token": token.strip(),
-            "prefix": os.environ.get("PREFIX", "*"),
-            "remote-users": os.environ.get("REMOTE_USERS", "").split(",") if os.environ.get("REMOTE_USERS") else [],
-            "selenium": {"headless": os.environ.get("SELENIUM_HEADLESS", "true").lower() == "true"}
-        }
+    """Load config from main.py variables, environment, or defaults"""
+    # Priority: 1. TOKEN variable in main.py, 2. Environment variable, 3. Default
+    token = TOKEN if TOKEN != "YOUR_TOKEN_HERE" else (os.environ.get("TOKEN") or os.environ.get("DISCORD_TOKEN") or "")
     
-    # Try config.json (optional - for backward compatibility)
-    for path in ["config/config.json", "config.json"]:
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    config = json.load(f)
-                    if "token" in config:
-                        config["token"] = config["token"].strip()
-                    return config
-            except:
-                pass
-    
-    # Return empty - token must be set via env var
-    return {"prefix": "*", "remote-users": [], "selenium": {"headless": True}}
+    return {
+        "token": token.strip() if token else "",
+        "prefix": PREFIX if PREFIX else (os.environ.get("PREFIX", "*")),
+        "remote-users": os.environ.get("REMOTE_USERS", "").split(",") if os.environ.get("REMOTE_USERS") else [],
+        "selenium": {"headless": os.environ.get("SELENIUM_HEADLESS", "true").lower() == "true"}
+    }
 
 def save_config(config):
-    """Save config to file (optional - only if config.json exists)"""
-    # Only save if config.json already exists (backward compatibility)
-    for path in ["config/config.json", "config.json"]:
-        if os.path.exists(path):
-            try:
-                os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
-                with open(path, "w", encoding="utf-8") as f:
-                    json.dump(config, f, indent=2)
-                return
-            except:
-                pass
+    """Save config - updates TOKEN and PREFIX in main.py"""
+    # Note: This doesn't actually modify the file, just updates in-memory config
+    # The token is stored directly in the TOKEN variable at the top of main.py
+    pass
 
 # ==================== UTILITIES ====================
 def get_uptime(start_time):
@@ -842,10 +828,10 @@ class Bot:
         self.prefix = self.config.get("prefix", "*")
         self.start_time = time.time()
         
-        if not self.token or self.token == "YOUR_BOT_TOKEN_HERE" or len(self.token) < 10:
-            print("❌ Set token via TOKEN environment variable")
-            print("   Example: export TOKEN='your_token_here'")
-            print("   Or on Replit: Set TOKEN in Secrets/Environment Variables")
+        if not self.token or self.token == "YOUR_TOKEN_HERE" or len(self.token) < 10:
+            print("❌ Please set your token in main.py")
+            print("   Edit the TOKEN variable at the top of main.py")
+            print("   Example: TOKEN = 'your_discord_token_here'")
             sys.exit(1)
         
         self.bot = discord.Client()
