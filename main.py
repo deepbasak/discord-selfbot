@@ -5,6 +5,48 @@ Supports Replit and local deployment
 
 import os
 import sys
+import subprocess
+
+# ==================== AUTO INSTALL DEPENDENCIES ====================
+def install_requirements():
+    """Auto-install missing packages"""
+    required_packages = {
+        "discord.py-self": "discord.py-self==2.0.0",
+        "audioop_lts": "audioop-lts>=0.2.2",
+        "selenium": "selenium==4.15.2",
+        "webdriver_manager": "webdriver-manager==4.0.1",
+        "requests": "requests==2.31.0",
+        "PIL": "Pillow>=10.4.0",
+        "qrcode": "qrcode==7.4.2",
+        "aiohttp": "aiohttp>=3.11.0",
+    }
+    
+    missing = []
+    for module, package in required_packages.items():
+        try:
+            if module == "PIL":
+                __import__("PIL")
+            elif module == "audioop_lts":
+                __import__("audioop")
+            else:
+                __import__(module.replace("-", "_"))
+        except ImportError:
+            missing.append(package)
+    
+    if missing:
+        print("📦 Installing missing packages...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "--upgrade", "pip", "setuptools", "wheel"])
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "--prefer-binary"] + missing)
+            print("✅ Packages installed successfully")
+        except subprocess.CalledProcessError:
+            print("⚠️  Some packages failed to install. You may need to install them manually:")
+            print(f"   pip install {' '.join(missing)}")
+            print("   Continuing anyway...")
+
+# Install dependencies before importing
+install_requirements()
+
 import asyncio
 import time
 import json
